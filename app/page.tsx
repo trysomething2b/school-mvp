@@ -1,69 +1,73 @@
-import Image from "next/image";
+'use client';
+import { useEffect, useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+type Student = {
+  id: string;
+  student_name: string;
+  status: string;
+};
 
 export default function Home() {
+  const [students, setStudents] = useState<Student[]>([]);
+
+  // 1. 抓取初始數據
+  const fetchStudents = async () => {
+    const { data } = await supabase.from('daily_attendance').select('*').order('student_name');
+    if (data) setStudents(data);
+  };
+
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
+  // 2. 更新學生狀態
+  const updateStatus = async (id: string, newStatus: string) => {
+    await supabase.from('daily_attendance').update({ status: newStatus, updated_at: new Date() }).eq('id', id);
+    fetchStudents();
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main className="p-8 max-w-4xl mx-auto font-sans">
+      <h1 className="text-2xl font-bold mb-6 text-center">🏫 MVP 學校出席點名系統 (10人測試版)</h1>
+      
+      <div className="bg-white shadow rounded-lg p-6">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="border-b bg-gray-50">
+              <th className="p-3">學生姓名</th>
+              <th className="p-3">當前狀態</th>
+              <th className="p-3 text-center">老師點名操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {students.map((student) => (
+              <tr key={student.id} className="border-b hover:bg-gray-50">
+                <td className="p-3 font-medium">{student.student_name}</td>
+                <td className="p-3">
+                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                    student.status === '準時' ? 'bg-green-100 text-green-800' :
+                    student.status === '遲到' ? 'bg-yellow-100 text-yellow-800' :
+                    student.status === '缺席' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {student.status}
+                  </span>
+                </td>
+                <td className="p-3 text-center space-x-2">
+                  <button onClick={() => updateStatus(student.id, '準時')} className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm">準時</button>
+                  <button onClick={() => updateStatus(student.id, '遲到')} className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-sm">遲到</button>
+                  <button onClick={() => updateStatus(student.id, '缺席')} className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm">缺席</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </main>
   );
 }

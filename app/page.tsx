@@ -40,7 +40,7 @@ export default function Home() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b bg-gray-50">
-              <th className="p-3">學生姓名</th>
+              <th className="p-3">=學生姓名=</th>
               <th className="p-3">當前狀態</th>
               <th className="p-3 text-center">老師點名操作</th>
             </tr>

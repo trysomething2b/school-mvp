@@ -65,19 +65,33 @@ export async function POST(request: Request) {
 
   const supabaseAdmin = createAdminClient()
 
-  const { data: profile, error: lookupError } = await supabaseAdmin
-    .from("profiles")
-    .select("id, sso_secret, role, school_id, full_name")
-    .eq("card_token", code)
-    .eq("is_card_active", true)
-    .maybeSingle()
+  // Card codes are stored in two shapes: seeded "CCS-0001" and random 8-char "G4AUXXMJ".
+  // formatCardCode normalizes "ccs0001"/"CCS-0001"/"CCS0001" -> "CCS-0001" (dash form).
+  // Try the formatted code first, then the dash-stripped form, so both shapes resolve.
+  const candidates = Array.from(new Set([code, code.replace(/-/g, "")].filter(Boolean)))
+
+  let profile: ProfileRow | null = null
+  let lookupError: { message: string } | null = null
+  for (const candidate of candidates) {
+    const res = await supabaseAdmin
+      .from("profiles")
+      .select("id, sso_secret, role, school_id, full_name")
+      .eq("card_token", candidate)
+      .eq("is_card_active", true)
+      .maybeSingle()
+    lookupError = res.error
+    if (res.error === null) {
+      profile = (res.data as ProfileRow | null)
+      if (profile) break
+    }
+  }
 
   if (lookupError) {
     console.info("[code-login] lookup error", lookupError.message)
     return jsonError("Unable to verify card code", 500, debug)
   }
 
-  const row = profile as ProfileRow | null
+  const row = profile
   if (!row) {
     return jsonError("Invalid or inactive card code", 401, debug)
   }

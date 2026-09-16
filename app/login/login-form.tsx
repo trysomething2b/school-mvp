@@ -2,7 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { formatCardCode } from "@/lib/auth/card-code"
+// NOTE: no formatCardCode import here on purpose — codes are typed as-is
 import { safeReturnTo } from "@/lib/auth/return-to"
 
 type Tab = "code" | "email"
@@ -99,8 +99,8 @@ export function LoginForm() {
                 autoCapitalize="characters"
                 inputMode="text"
                 value={code}
-                onChange={(event) => setCode(formatCardCode(event.target.value))}
-                placeholder="KD-7391"
+                onChange={(event) => setCode(event.target.value.toUpperCase())}
+                placeholder="CCS-0001"
                 className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2.5 font-mono uppercase tracking-wider outline-none focus:border-zinc-900"
               />
             </label>
